@@ -8,15 +8,22 @@ using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.Foundation.Metadata;
 
 namespace Template10.Controls
 {
     public class CustomTitleBar : Control
     {
         private ApplicationViewTitleBar _titleBar;
+        private StatusBar _statusBar;
         internal CustomTitleBar()
         {
             _titleBar = ApplicationView.GetForCurrentView().TitleBar;
+            if (ApiInformation.IsTypePresent("Windows.UI.ViewManagement.StatusBar"))
+            {
+                _statusBar = StatusBar.GetForCurrentView();
+                _statusBar.BackgroundOpacity = 1.0;
+            }
         }
 
         public bool Extended
@@ -30,8 +37,8 @@ namespace Template10.Controls
 
         public Color BackgroundColor
         {
-            get { return _titleBar.BackgroundColor ?? Colors.Transparent; }
-            set { _titleBar.BackgroundColor = value; }
+            get { return (_titleBar.BackgroundColor ?? _statusBar.BackgroundColor) ?? Colors.Transparent; }
+            set { _titleBar.BackgroundColor = value; if (_statusBar != null) _statusBar.BackgroundColor = value; }
         }
         public static readonly DependencyProperty BackgroundColorProperty =
             DependencyProperty.Register(nameof(BackgroundColor), typeof(Color), typeof(CustomTitleBar), new PropertyMetadata(null, (d, e) =>
@@ -39,8 +46,8 @@ namespace Template10.Controls
 
         public Color ForegroundColor
         {
-            get { return _titleBar.ForegroundColor ?? Colors.Transparent; }
-            set { _titleBar.ForegroundColor = value; }
+            get { return (_titleBar.ForegroundColor ?? _statusBar.ForegroundColor) ?? Colors.Transparent; }
+            set { _titleBar.ForegroundColor = value; if (_statusBar != null) _statusBar.ForegroundColor = value; }
         }
         public static readonly DependencyProperty ForegroundColorProperty =
             DependencyProperty.Register(nameof(ForegroundColor), typeof(Color), typeof(CustomTitleBar), new PropertyMetadata(null, (d, e) =>
@@ -135,5 +142,33 @@ namespace Template10.Controls
         public static readonly DependencyProperty InactiveForegroundColorProperty =
             DependencyProperty.Register(nameof(InactiveForegroundColor), typeof(Color), typeof(CustomTitleBar), new PropertyMetadata(null, (d, e) =>
             { (d as CustomTitleBar).InactiveForegroundColor = (Color)e.NewValue; }));
+
+        public static void Setup()
+        {
+            // this "unused" bit is very important because of a quirk in ResourceThemes
+            try
+            {
+                if (Application.Current.Resources.ContainsKey("ExtendedSplashBackground"))
+                {
+                    var unused = Application.Current.Resources["ExtendedSplashBackground"];
+                }
+            }
+            catch { /* this is okay */ }
+
+            // this wonky style of loop is important due to a platform bug
+            int count = Application.Current.Resources.Count;
+            foreach (var resource in Application.Current.Resources)
+            {
+                var k = resource.Key;
+                if (k == typeof(Controls.CustomTitleBar))
+                {
+                    var s = resource.Value as Style;
+                    var t = new Controls.CustomTitleBar();
+                    t.Style = s;
+                }
+                count--;
+                if (count == 0) break;
+            }
+        }
     }
 }
