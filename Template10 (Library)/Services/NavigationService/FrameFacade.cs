@@ -170,10 +170,14 @@ namespace Template10.Services.NavigationService
 
             try
             {
+                object context = (Frame as FrameworkElement).DataContext;
+
                 Windows.ApplicationModel.Resources.Core.ResourceContext.GetForCurrentView().Reset();
                 // this only works for apps using serializable types
                 var state = Frame.GetNavigationState();
                 Frame.SetNavigationState(state);
+
+                (Frame as FrameworkElement).DataContext = context;
             }
             catch (Exception)
             {
@@ -203,10 +207,11 @@ namespace Template10.Services.NavigationService
             
             try
             {
+                object context = (Frame as FrameworkElement).DataContext;
                 Windows.ApplicationModel.Resources.Core.ResourceContext.GetForCurrentView().Reset();
                 // navigates to the current page with new parameters.
                 Frame.Navigate(CurrentPageType, param, new SuppressNavigationTransitionInfo());
-
+                (Frame as FrameworkElement).DataContext = context;
               
             }
             catch (Exception)
@@ -293,7 +298,7 @@ namespace Template10.Services.NavigationService
                 throw new Exception("Your parameter must be serializable. If it isn't, then use SessionState.", ex);
             }
             var deferral = new DeferralManager();
-            var args = new NavigatingEventArgs(deferral, e, Content as Page, parameter);
+            var args = new NavigatingEventArgs(deferral, e, Content as Page, e.SourcePageType, parameter, e.Parameter);
             if (NavigationModeHint != NavigationMode.New)
                 args.NavigationMode = NavigationModeHint;
             NavigationModeHint = NavigationMode.New;
